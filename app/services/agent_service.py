@@ -1,3 +1,4 @@
+from langsmith import traceable
 from groq import Groq
 from app.models.schemas import Transaction, FinanceResponse
 from app.core.config import get_settings
@@ -233,5 +234,6 @@ class AgentService:
         )
 
 
+@traceable(name="finance_agent_run")
 def get_agent_service() -> AgentService:
     return AgentService()

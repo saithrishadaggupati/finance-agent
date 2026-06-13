@@ -1,3 +1,4 @@
+import os
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 from pydantic import ConfigDict
@@ -5,9 +6,13 @@ from functools import lru_cache
 
 load_dotenv(override=True)
 
+os.environ["LANGCHAIN_TRACING_V2"] = "true"
+os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY", "")
+os.environ["LANGCHAIN_PROJECT"] = "finance-agent"
+
 
 class Settings(BaseSettings):
-    model_config = ConfigDict(env_file=".env", case_sensitive=False)
+    model_config = ConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 
     # App
     app_name: str = "Finance Agent"

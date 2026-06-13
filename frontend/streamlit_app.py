@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 import pandas as pd
 from io import StringIO
 
-API_URL = "http://localhost:8000/api/v1/finance"
+API_URL = "http://localhost:8001/api/v1/finance"
 
 st.set_page_config(
     page_title="Finance Agent",
