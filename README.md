@@ -8,7 +8,7 @@ This agent analyzes your transactions, answers specific questions about your spe
 
 
 
-![Home](images/finance-agent-home.png)                                                                              ![Result](images/finance-agent-result.png)
+![Home](images/finance-agent-home.png)                           ## >>>                                                ![Result](images/finance-agent-result.png)
 
 ## How it works
 
