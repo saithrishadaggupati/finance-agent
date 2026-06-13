@@ -4,6 +4,18 @@ I built this because most budgeting tools just show you charts. They don't tell 
 
 This agent analyzes your transactions, answers specific questions about your spending, flags things that need attention, and remembers what you've already asked — so you don't have to repeat yourself every time.
 
+## Screenshots
+
+
+
+![Home](images/finance-agent-home.png)
+
+
+
+
+
+![Result](images/finance-agent-result.png)
+
 ## How it works
 
 1. You paste your transactions in CSV format
