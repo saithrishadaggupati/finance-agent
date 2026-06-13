@@ -1,6 +1,9 @@
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 from pydantic import ConfigDict
 from functools import lru_cache
+
+load_dotenv(override=True)
 
 
 class Settings(BaseSettings):
@@ -20,6 +23,5 @@ class Settings(BaseSettings):
     max_memory_items: int = 50
 
 
-@lru_cache()
 def get_settings() -> Settings:
     return Settings()

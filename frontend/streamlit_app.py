@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import plotly.express as px
 import pandas as pd
+from io import StringIO
 
 API_URL = "http://localhost:8000/api/v1/finance"
 
@@ -14,10 +15,9 @@ st.set_page_config(
 st.title("💰 Personal Finance Agent")
 st.caption("Upload your transactions and ask anything about your spending")
 
-# ── Sidebar — Transaction Input ───────────────────────────────────────────────
+# ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.header("Your Transactions")
-    st.caption("Paste your transactions below")
 
     sample = """date,description,amount,category
 2024-01-01,Swiggy Food Order,850,Food
@@ -47,7 +47,6 @@ with st.sidebar:
 transactions = []
 if csv_input:
     try:
-        from io import StringIO
         df = pd.read_csv(StringIO(csv_input))
         for _, row in df.iterrows():
             transactions.append({
@@ -59,59 +58,67 @@ if csv_input:
     except Exception as e:
         st.sidebar.error(f"CSV parse error: {e}")
 
-# ── Main — Question Input ─────────────────────────────────────────────────────
+# ── Main ──────────────────────────────────────────────────────────────────────
 question = st.text_input(
     "Ask about your finances",
-    placeholder="Where am I spending the most? Am I overspending on food?"
+    placeholder="How much did I spend on Netflix? Where am I overspending?"
 )
 
 if st.button("Ask", use_container_width=True) and question:
-    with st.spinner("Analyzing your finances..."):
+    with st.spinner("Analyzing..."):
         try:
             response = requests.post(API_URL, json={
                 "question": question,
                 "transactions": transactions,
                 "use_memory": use_memory
             })
-            data = response.json()
 
-            # ── Answer ────────────────────────────────────────────────────────
-            st.markdown("### Answer")
-            st.write(data["answer"])
+            if response.status_code != 200:
+                st.error(f"API error {response.status_code}: {response.text}")
+            else:
+                data = response.json()
 
-            # ── Summary Metrics ───────────────────────────────────────────────
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("Total Spent", f"₹{data.get('total_spent', 0):,.2f}")
-            with col2:
-                st.metric("Top Category", data.get("top_category", "N/A"))
-            with col3:
-                st.metric("Transactions", len(transactions))
+                # Answer
+                st.markdown("### Answer")
+                st.write(data.get("answer", "No answer returned"))
 
-            # ── Insights ──────────────────────────────────────────────────────
-            if data.get("insights"):
-                st.markdown("### Insights")
-                for insight in data["insights"]:
-                    severity = insight["severity"]
-                    if severity == "alert":
-                        st.error(f"🚨 **{insight['title']}** — {insight['description']}")
-                    elif severity == "warning":
-                        st.warning(f"⚠️ **{insight['title']}** — {insight['description']}")
-                    else:
-                        st.info(f"💡 **{insight['title']}** — {insight['description']}")
+                # Metrics
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    total = data.get("total_spent") or 0
+                    st.metric("Total Spent", f"₹{total:,.2f}")
+                with col2:
+                    st.metric("Top Category", data.get("top_category") or "N/A")
+                with col3:
+                    st.metric("Transactions", len(transactions))
 
-            # ── Spending Chart ────────────────────────────────────────────────
-            if transactions:
-                st.markdown("### Spending by Category")
-                df = pd.DataFrame(transactions)
-                category_spend = df.groupby("category")["amount"].sum().reset_index()
-                fig = px.pie(
-                    category_spend,
-                    names="category",
-                    values="amount",
-                    hole=0.4
-                )
-                st.plotly_chart(fig, use_container_width=True)
+                # Insights
+                insights = data.get("insights", [])
+                if insights:
+                    st.markdown("### Insights")
+                    for insight in insights:
+                        severity = insight.get("severity", "info")
+                        title = insight.get("title", "")
+                        desc = insight.get("description", "")
+                        if severity == "alert":
+                            st.error(f"🚨 **{title}** — {desc}")
+                        elif severity == "warning":
+                            st.warning(f"⚠️ **{title}** — {desc}")
+                        else:
+                            st.info(f"💡 **{title}** — {desc}")
+
+                # Chart
+                if transactions:
+                    st.markdown("### Spending by Category")
+                    df_chart = pd.DataFrame(transactions)
+                    category_spend = df_chart.groupby("category")["amount"].sum().reset_index()
+                    fig = px.pie(
+                        category_spend,
+                        names="category",
+                        values="amount",
+                        hole=0.4
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
 
         except Exception as e:
             st.error(f"Something went wrong: {e}")
