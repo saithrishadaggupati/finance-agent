@@ -1,10 +1,9 @@
-﻿# Finance Agent
+@'
+# Finance Agent
 
-Most budgeting tools show you charts. This one tells you what to do about them.
+I built this because most budgeting tools just show you charts. They don't tell you what to do about them.
 
-The agent takes your transaction data, answers specific questions using a ReAct loop with real tool calls, verifies every number through a second LLM critique pass, generates charts on demand, caches repeated queries in Redis, and remembers your conversation so follow-up questions actually make sense.
-
-I built this because I wanted to see what a finance assistant looks like when you treat accuracy as a hard requirement rather than a nice-to-have. The Critique Agent was the most interesting part — it compares the LLM answer against Pandas ground truth and rewrites anything that does not match.
+This agent analyzes your transactions, answers specific questions about your spending, verifies its own answers using a second LLM critique pass, generates dynamic charts on demand, and remembers what you've already asked — so you don't have to repeat yourself every time.
 
 ## Screenshots
 
@@ -24,11 +23,10 @@ I built this because I wanted to see what a finance assistant looks like when yo
 1. You paste your transactions in CSV format
 2. Ask anything — "where am I overspending?" or "show me a chart of my spending"
 3. A ReAct agent calls tools to get exact numbers before answering — it never guesses
-4. A Critique Agent (second LLM) compares the answer against Pandas ground truth and corrects any errors
+4. A second LLM (Critique Agent) compares the answer against Pandas ground truth and corrects any errors
 5. If the agent detects a chart request, it calls generate_chart and returns a Plotly visualization
 6. Repeated questions are served from Redis cache — sub-millisecond on the second call
 7. Every question and answer gets saved to SQLite so the next question has context
-8. Every request is traced end-to-end in LangSmith
 
 The memory piece is what makes this feel like a real assistant rather than a one-shot query tool. Ask "how much did I spend on transport?" then ask "compare that to food" — it knows what "that" means.
 
@@ -41,18 +39,16 @@ The memory piece is what makes this feel like a real assistant rather than a one
 
 ## Stack
 
-- FastAPI + Uvicorn - backend API
-- Streamlit + Plotly - frontend with agent-generated dynamic charts
-- Groq (Llama 3.3 70B) - ReAct agent, insight generation, LLM-as-a-Judge critique
-- Pandas - transaction parsing, category aggregation, ground truth verification
-- Redis - query cache with in-memory fallback when Redis is not running
-- SQLite - conversation memory, no external DB needed
-- LangSmith - full request tracing and ReAct loop observability
-- Plaid API - OAuth link token flow and webhook handler (sandbox-ready)
-- Pydantic v2 - request and response validation
-- pytest - 7 tests, all external calls mocked
-- Docker + docker-compose - containerization with Redis service
-- GitHub Actions - CI on every push
+- FastAPI + Uvicorn — backend API
+- Streamlit + Plotly — frontend with agent-generated dynamic charts
+- Groq (Llama 3.3 70B) — ReAct agent, insight generation, LLM-as-a-Judge critique
+- Pandas — transaction parsing, category aggregation, ground truth verification
+- Redis — query cache with in-memory fallback when Redis isn't running
+- SQLite — conversation memory, no external DB needed
+- LangSmith — full request tracing and ReAct loop observability
+- Plaid API — OAuth link token flow and webhook handler (sandbox-ready)
+- Pydantic v2 — request and response validation
+- pytest — 7 tests, all external calls mocked
 
 ## Project structure
 
@@ -75,8 +71,6 @@ app/
     plaid_service.py       # OAuth flow, token exchange, webhook handler
 frontend/
   streamlit_app.py         # UI with dynamic charts, cache indicator, badges
-evals/
-  eval_finance.py          # DeepEval evaluation - accuracy and hallucination detection
 tests/
   test_finance.py          # 7 tests, no API key needed
 
@@ -92,29 +86,20 @@ cp .env.example .env
 uvicorn app.main:app --reload --port 8001
 streamlit run frontend/streamlit_app.py
 
-## Run with Docker
-
-docker-compose up --build
-
 ## API endpoints
 
-- POST /api/v1/finance - main agent endpoint
-- DELETE /api/v1/finance/memory - clear conversation memory
-- GET /api/v1/finance/memory - view recent memory
-- DELETE /api/v1/finance/cache - flush cache
-- GET /api/v1/finance/cache/status - check Redis connection
-- GET /api/v1/plaid/link-token - start Plaid OAuth flow
-- POST /api/v1/plaid/exchange-token - exchange public token
-- POST /api/v1/plaid/sync - sync transactions
-- POST /api/v1/plaid/webhook - handle Plaid webhooks
-
-## Evaluations
-
-python evals/eval_finance.py
-
-Runs 5 queries through the live system and checks numerical accuracy against Pandas ground truth. Results saved to evals/results.json.
+- POST /api/v1/finance — main agent endpoint
+- DELETE /api/v1/finance/memory — clear conversation memory
+- GET /api/v1/finance/memory — view recent memory
+- DELETE /api/v1/finance/cache — flush cache
+- GET /api/v1/finance/cache/status — check Redis connection
+- GET /api/v1/plaid/link-token — start Plaid OAuth flow
+- POST /api/v1/plaid/exchange-token — exchange public token
+- POST /api/v1/plaid/sync — sync transactions
+- POST /api/v1/plaid/webhook — handle Plaid webhooks
 
 ## Tests
 
 pytest tests/ -v
-# 7 passed - all external calls are mocked
+# 7 passed — all external calls are mocked
+'@ | Set-Content "C:\Users\ASUS\finance_agent\README.md" -Encoding UTF8; git add .; git commit -m "docs: update README to reflect all upgrades"; git push
