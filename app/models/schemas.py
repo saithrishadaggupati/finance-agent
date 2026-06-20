@@ -53,3 +53,15 @@ class PlaidWebhookEvent(BaseModel):
     webhook_type: str
     webhook_code: str
     item_id: str
+
+
+class CategoryForecast(BaseModel):
+    category: str
+    next_month_forecast: float
+    mae: float
+    months_of_data: int
+
+
+class ForecastResponse(BaseModel):
+    forecasts: List[CategoryForecast]
+    total_forecast: float

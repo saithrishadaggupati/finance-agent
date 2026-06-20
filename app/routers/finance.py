@@ -1,3 +1,5 @@
+from app.services.forecasting_service import get_forecasting_service
+from app.models.schemas import ForecastResponse, CategoryForecast
 from fastapi import APIRouter, HTTPException, Request
 from app.models.schemas import FinanceRequest, FinanceResponse, ErrorResponse, PlaidWebhookEvent
 from app.services.agent_service import get_agent_service
@@ -103,5 +105,23 @@ def plaid_webhook(event: PlaidWebhookEvent):
             webhook_code=event.webhook_code,
             item_id=event.item_id
         )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/finance/forecast", response_model=ForecastResponse)
+def forecast_spending(request: FinanceRequest):
+    try:
+        if not request.transactions:
+            raise HTTPException(status_code=400, detail="Transactions are required for forecasting.")
+        service = get_forecasting_service()
+        forecasts = service.forecast(request.transactions)
+        total = sum(f["next_month_forecast"] for f in forecasts)
+        return ForecastResponse(
+            forecasts=[CategoryForecast(**f) for f in forecasts],
+            total_forecast=round(total, 2)
+        )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
