@@ -41,33 +41,36 @@ class InsightService:
 
         formatted = self.transaction_service.format_for_prompt(transactions)
 
-        result = self.client.chat.completions.create(
-            model=self.settings.groq_model,
-            response_model=InsightList,
-            messages=[
-                {
-                    "role": "system",
-                    "content": INSIGHT_SYSTEM_PROMPT
-                },
-                {
-                    "role": "user",
-                    "content": INSIGHT_USER_PROMPT.format(
-                        transactions=formatted
-                    )
-                }
-            ],
-            temperature=0.2
-        )
-
-        return [
-            Insight(
-                title=item.title,
-                description=item.description,
-                severity=item.severity,
-                amount=item.amount
+        try:
+            result = self.client.chat.completions.create(
+                model=self.settings.groq_model,
+                response_model=InsightList,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": INSIGHT_SYSTEM_PROMPT
+                    },
+                    {
+                        "role": "user",
+                        "content": INSIGHT_USER_PROMPT.format(
+                            transactions=formatted
+                        )
+                    }
+                ],
+                temperature=0.2
             )
-            for item in result.insights
-        ]
+
+            return [
+                Insight(
+                    title=item.title,
+                    description=item.description,
+                    severity=item.severity,
+                    amount=item.amount
+                )
+                for item in result.insights
+            ]
+        except Exception:
+            return []
 
 
 def get_insight_service() -> InsightService:
