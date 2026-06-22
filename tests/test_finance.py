@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 from app.models.schemas import Transaction, FinanceRequest
 from app.services.transaction_service import TransactionService
-from app.services.insight_service import InsightService
+from app.services.insight_service import InsightService, InsightItem, InsightList
 from app.services.agent_service import AgentService
 
 
@@ -61,8 +61,8 @@ class TestInsightService:
         mock_groq.return_value = MagicMock()
         mock_client = MagicMock()
         mock_instructor.from_groq.return_value = mock_client
-        mock_client.chat.completions.create.return_value = MagicMock(
-            choices=[MagicMock(message=MagicMock(content='[{"title": "High Food Spending", "description": "Food costs ₹2950", "severity": "warning", "amount": 2950.0}]'))]
+        mock_client.chat.completions.create.return_value = InsightList(
+            insights=[InsightItem(title="High Food Spending", description="Food costs ₹2950", severity="warning", amount=2950.0)]
         )
 
         service = InsightService()
@@ -86,22 +86,16 @@ class TestInsightService:
         assert insights == []
 
     @patch("app.services.insight_service.instructor")
-@patch("app.services.insight_service.Groq")
-@patch("app.services.insight_service.get_settings")
-def test_generate_insights(self, mock_get_settings, mock_groq, mock_instructor, mock_settings, sample_transactions):
-    mock_get_settings.return_value = mock_settings
-    mock_groq.return_value = MagicMock()
-    mock_client = MagicMock()
-    mock_instructor.from_groq.return_value = mock_client
+    @patch("app.services.insight_service.Groq")
+    @patch("app.services.insight_service.get_settings")
+    def test_generate_bad_json_returns_empty(self, mock_get_settings, mock_groq, mock_instructor, mock_settings, sample_transactions):
+        mock_get_settings.return_value = mock_settings
+        mock_groq.return_value = MagicMock()
+        mock_client = MagicMock()
+        mock_instructor.from_groq.return_value = mock_client
+        mock_client.chat.completions.create.side_effect = Exception("bad json")
 
-    from app.services.insight_service import InsightItem, InsightList
-    mock_client.chat.completions.create.return_value = InsightList(
-        insights=[InsightItem(title="High Food Spending", description="Food costs ₹2950", severity="warning", amount=2950.0)]
-    )
+        service = InsightService()
+        insights = service.generate(sample_transactions)
 
-    service = InsightService()
-    insights = service.generate(sample_transactions)
-
-    assert len(insights) == 1
-    assert insights[0].title == "High Food Spending"
-    assert insights[0].severity == "warning"
+        assert insights == []
