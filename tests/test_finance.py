@@ -1,5 +1,4 @@
 import pytest
-import groq
 from unittest.mock import MagicMock, patch
 from app.models.schemas import Transaction, FinanceRequest
 from app.services.transaction_service import TransactionService
@@ -54,12 +53,14 @@ class TestTransactionService:
 
 
 class TestInsightService:
+    @patch("app.services.insight_service.instructor")
     @patch("app.services.insight_service.Groq")
     @patch("app.services.insight_service.get_settings")
-    def test_generate_insights(self, mock_get_settings, mock_groq, mock_settings, sample_transactions):
+    def test_generate_insights(self, mock_get_settings, mock_groq, mock_instructor, mock_settings, sample_transactions):
         mock_get_settings.return_value = mock_settings
-        mock_client = MagicMock(spec=groq.Groq)
-        mock_groq.return_value = mock_client
+        mock_groq.return_value = MagicMock()
+        mock_client = MagicMock()
+        mock_instructor.from_groq.return_value = mock_client
         mock_client.chat.completions.create.return_value = MagicMock(
             choices=[MagicMock(message=MagicMock(content='[{"title": "High Food Spending", "description": "Food costs ₹2950", "severity": "warning", "amount": 2950.0}]'))]
         )
@@ -71,23 +72,27 @@ class TestInsightService:
         assert insights[0].title == "High Food Spending"
         assert insights[0].severity == "warning"
 
+    @patch("app.services.insight_service.instructor")
     @patch("app.services.insight_service.Groq")
     @patch("app.services.insight_service.get_settings")
-    def test_generate_empty_transactions(self, mock_get_settings, mock_groq, mock_settings):
+    def test_generate_empty_transactions(self, mock_get_settings, mock_groq, mock_instructor, mock_settings):
         mock_get_settings.return_value = mock_settings
-        mock_groq.return_value = MagicMock(spec=groq.Groq)
+        mock_groq.return_value = MagicMock()
+        mock_instructor.from_groq.return_value = MagicMock()
 
         service = InsightService()
         insights = service.generate([])
 
         assert insights == []
 
+    @patch("app.services.insight_service.instructor")
     @patch("app.services.insight_service.Groq")
     @patch("app.services.insight_service.get_settings")
-    def test_generate_bad_json_returns_empty(self, mock_get_settings, mock_groq, mock_settings, sample_transactions):
+    def test_generate_bad_json_returns_empty(self, mock_get_settings, mock_groq, mock_instructor, mock_settings, sample_transactions):
         mock_get_settings.return_value = mock_settings
-        mock_client = MagicMock(spec=groq.Groq)
-        mock_groq.return_value = mock_client
+        mock_groq.return_value = MagicMock()
+        mock_client = MagicMock()
+        mock_instructor.from_groq.return_value = mock_client
         mock_client.chat.completions.create.return_value = MagicMock(
             choices=[MagicMock(message=MagicMock(content="not valid json"))]
         )
